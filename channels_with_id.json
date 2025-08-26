@@ -1,434 +1,278 @@
-{
-  "metadata": {
-    "version": "2.0",
-    "last_updated": "2024-01-16",
-    "total_channels": 66,
-    "description": "Hololive VTuber channels organized by branch and generation"
-  },
-  "channels": {
-    "hololive_jp": {
-      "gen0": [
-        {
-          "handle": "tokinosora",
-          "id": "UCp6993wxpyDPHUpavwDFqgg",
-          "name": "Tokino Sora",
-          "debut_date": "2017-05-07"
-        },
-        {
-          "handle": "robocosan",
-          "id": "UCDqI2jOz0weumE8s7paEk6g",
-          "name": "Roboco-san",
-          "debut_date": "2018-03-04"
-        },
-        {
-          "handle": "sakuramiko",
-          "id": "UC-hM6YJuNYVAmUWxeIr9FeA",
-          "name": "Sakura Miko",
-          "debut_date": "2018-08-01"
-        },
-        {
-          "handle": "HoshimachiSuisei",
-          "id": "UC5CwaMl1eIgY8h02uZw7u8A",
-          "name": "Hoshimachi Suisei",
-          "debut_date": "2018-03-22"
-        },
-        {
-          "handle": "azki",
-          "id": "UC0TXe_LYZ4scaW2XMyi5_kw",
-          "name": "AZKi",
-          "debut_date": "2018-11-15"
-        }
-      ],
-      "gen1": [
-        {
-          "handle": "ShirakamiFubuki",
-          "id": "UCdn5BQ06XqgXoAxIhbqw5Rg",
-          "name": "Shirakami Fubuki",
-          "debut_date": "2018-06-01"
-        },
-        {
-          "handle": "NatsuiroMatsuri",
-          "id": "UCQ0UDLQCjY0rmuxCDE38FGg",
-          "name": "Natsuiro Matsuri",
-          "debut_date": "2018-06-01"
-        },
-        {
-          "handle": "AkaiHaato",
-          "id": "UC1CfXB_kRs3C-zaeTG3oGyg",
-          "name": "Akai Haato",
-          "debut_date": "2018-05-28"
-        },
-        {
-          "handle": "AkiRosenthal",
-          "id": "UCFTLzh12_nrtzqBPsTCqenA",
-          "name": "Aki Rosenthal",
-          "debut_date": "2018-06-07"
-        },
-        {
-          "handle": "NakiriAyame",
-          "id": "UC7fk0CB07ly8oSl0aqKkqFg",
-          "name": "Nakiri Ayame",
-          "debut_date": "2018-09-03"
-        }
-      ],
-      "gen2": [
-        {
-          "handle": "YuzukiChoco",
-          "id": "UC1suqwovbL1kzsoaZgFZLKg",
-          "name": "Yuzuki Choco",
-          "debut_date": "2018-09-05"
-        },
-        {
-          "handle": "OozoraSubaru",
-          "id": "UCvzGlP9oQwU--Y0r9id_jnA",
-          "name": "Oozora Subaru",
-          "debut_date": "2018-09-16"
-        },
-        {
-          "handle": "OokamiMio",
-          "id": "UCp-5t9SrOQwXMU7iIjQfARg",
-          "name": "Ookami Mio",
-          "debut_date": "2018-12-07"
-        },
-        {
-          "handle": "NekomataOkayu",
-          "id": "UCvaTdHTWBGv3MKj3KVqJVCw",
-          "name": "Nekomata Okayu",
-          "debut_date": "2019-04-06"
-        },
-        {
-          "handle": "InugamiKorone",
-          "id": "UChAnqc_AY5_I3Px5dig3X1Q",
-          "name": "Inugami Korone",
-          "debut_date": "2019-04-13"
-        }
-      ],
-      "gen3": [
-        {
-          "handle": "usadapekora",
-          "id": "UC1DCedRgGHBdm81E1llLhOQ",
-          "name": "Usada Pekora",
-          "debut_date": "2019-07-17"
-        },
-        {
-          "handle": "ShiranuiFlare",
-          "id": "UCvInZx9h3jC2JzsIzoOebWg",
-          "name": "Shiranui Flare",
-          "debut_date": "2019-08-07"
-        },
-        {
-          "handle": "shiroganenoel",
-          "id": "UCdyqAaZDKHXg4Ahi7VENThQ",
-          "name": "Shirogane Noel",
-          "debut_date": "2019-08-08"
-        },
-        {
-          "handle": "houshoumarine",
-          "id": "UCCzUftO8KOVkV4wQG1vkUvg",
-          "name": "Houshou Marine",
-          "debut_date": "2019-08-11"
-        }
-      ],
-      "gen4": [
-        {
-          "handle": "AmaneKanata",
-          "id": "UCZlDXzGoo7d44bwdNObFacg",
-          "name": "Amane Kanata",
-          "debut_date": "2019-12-27"
-        },
-        {
-          "handle": "TsunomakiWatame",
-          "id": "UCqm3BQLlJfvkTsX_hvm0UmA",
-          "name": "Tsunomaki Watame",
-          "debut_date": "2019-12-29"
-        },
-        {
-          "handle": "TokoyamiTowa",
-          "id": "UC1uv2Oq6kNxgATlCiez59hw",
-          "name": "Tokoyami Towa",
-          "debut_date": "2020-01-03"
-        },
-        {
-          "handle": "HimemoriLuna",
-          "id": "UCa9Y57gfeY0Zro_noHRVrnw",
-          "name": "Himemori Luna",
-          "debut_date": "2019-12-29"
-        }
-      ],
-      "gen5": [
-        {
-          "handle": "YukihanaLamy",
-          "id": "UCFKOVgVbGmX65RxO3EtH3iw",
-          "name": "Yukihana Lamy",
-          "debut_date": "2020-08-12"
-        },
-        {
-          "handle": "MomosuzuNene",
-          "id": "UCAWSyEs_Io8MtpY3m-zqILA",
-          "name": "Momosuzu Nene",
-          "debut_date": "2020-08-17"
-        },
-        {
-          "handle": "ShishiroBotan",
-          "id": "UCUKD-uaobj9jiqB-VXt71mA",
-          "name": "Shishiro Botan",
-          "debut_date": "2020-08-14"
-        },
-        {
-          "handle": "OmaruPolka",
-          "id": "UCK9V2B22uJYu3N7eR_BT9QA",
-          "name": "Omaru Polka",
-          "debut_date": "2020-08-16"
-        }
-      ],
-      "gen6": [
-        {
-          "handle": "LaplusDarknesss",
-          "id": "UCENwRMx5Yh42zWpzURebzTw",
-          "name": "Laplus Darknesss",
-          "debut_date": "2021-11-26"
-        },
-        {
-          "handle": "TakaneLui",
-          "id": "UCs9_O1tRPMQTHQ-N_L6FU2g",
-          "name": "Takane Lui",
-          "debut_date": "2021-11-26"
-        },
-        {
-          "handle": "HakuiKoyori",
-          "id": "UC6eWCld0KwmyHFbAqK3V-Rw",
-          "name": "Hakui Koyori",
-          "debut_date": "2021-11-28"
-        },
-        {
-          "handle": "KazamaIroha",
-          "id": "UC_vMYWcDjmfdpH6r4TTn1MQ",
-          "name": "Kazama Iroha",
-          "debut_date": "2021-11-30"
-        }
-      ],
-      "regloss": [
-        {
-          "handle": "HiodoshiAo",
-          "id": "UCMGfV7TVTmHhEErVJg1oHBQ",
-          "name": "Hiodoshi Ao",
-          "debut_date": "2023-09-10"
-        },
-        {
-          "handle": "OtonoseKanade",
-          "id": "UCWQtYtq9EOB4-I5P-3fh8lA",
-          "name": "Otonose Kanade",
-          "debut_date": "2023-09-09"
-        },
-        {
-          "handle": "IchijouRirika",
-          "id": "UCtyWhCj3AqKh2dXctLkDtng",
-          "name": "Ichijou Ririka",
-          "debut_date": "2023-09-11"
-        },
-        {
-          "handle": "JuufuuteiRaden",
-          "id": "UCdXAk5MpyLD8594lm_OvtGQ",
-          "name": "Juufuutei Raden",
-          "debut_date": "2023-09-10"
-        },
-        {
-          "handle": "TodorokiHajime",
-          "id": "UC1iA6_NT4mtAcIII6ygrvCw",
-          "name": "Todoroki Hajime",
-          "debut_date": "2023-09-07"
-        }
-      ],
-      "flowglow": [
-        {
-          "handle": "IsakiRiona",
-          "id": "UC9LSiN9hXI55svYEBrrK-tw",
-          "name": "Isaki Riona",
-          "debut_date": "2024-09-02"
-        },
-        {
-          "handle": "KoganeiNiko",
-          "id": "UCuI_opAVX6qbxZY-a-AxFuQ",
-          "name": "Koganei Niko",
-          "debut_date": "2024-09-02"
-        },
-        {
-          "handle": "MizumiyaSu",
-          "id": "UCjk2nKmHzgH5Xy-C5qYRd5A",
-          "name": "Mizumiya Su",
-          "debut_date": "2024-09-02"
-        },
-        {
-          "handle": "RindoChihaya",
-          "id": "UCKMWFR6lAstLa7Vbf5dH7ig",
-          "name": "Rindo Chihaya",
-          "debut_date": "2024-09-02"
-        },
-        {
-          "handle": "KikiraraVivi",
-          "id": "UCGzTVXqMQHa4AgJVJIVvtDQ",
-          "name": "Kikirara Vivi",
-          "debut_date": "2024-09-02"
-        }
-      ]
+[
+    {
+        "handle":  "tokinosora",
+        "id":  "UCp6993wxpyDPHUpavwDFqgg"
     },
-    "hololive_id": {
-      "gen1": [
-        {
-          "handle": "AyundaRisu",
-          "id": "UCOyYb1c43VlX9rc_lT6NKQw",
-          "name": "Ayunda Risu",
-          "debut_date": "2020-04-10"
-        },
-        {
-          "handle": "MoonaHoshinova",
-          "id": "UCP0BspO_AMEe3aQqqpo89Dg",
-          "name": "Moona Hoshinova",
-          "debut_date": "2020-04-11"
-        },
-        {
-          "handle": "AiraniIofifteen",
-          "id": "UCAoy6rzhSf4ydcYjJw3WoVg",
-          "name": "Airani Iofifteen",
-          "debut_date": "2020-04-12"
-        }
-      ],
-      "gen2": [
-        {
-          "handle": "KureijiOllie",
-          "id": "UCYz_5n-uDuChHtLo7My1HnQ",
-          "name": "Kureiji Ollie",
-          "debut_date": "2020-12-04"
-        },
-        {
-          "handle": "AnyaMelfissa",
-          "id": "UC727SQYUvx5pDDGQpTICNWg",
-          "name": "Anya Melfissa",
-          "debut_date": "2020-12-04"
-        },
-        {
-          "handle": "PavoliaReine",
-          "id": "UChgTyjG-pdNvxxhdsXfHQ5Q",
-          "name": "Pavolia Reine",
-          "debut_date": "2020-12-09"
-        }
-      ],
-      "gen3": [
-        {
-          "handle": "VestiaZeta",
-          "id": "UCTvHWSfBZgtxE4sILOaurIQ",
-          "name": "Vestia Zeta",
-          "debut_date": "2022-03-25"
-        },
-        {
-          "handle": "KaelaKovalskia",
-          "id": "UCZLZ8Jjx_RN2CXloOmgTHVg",
-          "name": "Kaela Kovalskia",
-          "debut_date": "2022-03-26"
-        },
-        {
-          "handle": "KoboKanaeru",
-          "id": "UCjLEmnpCNeisMxy134KPwWw",
-          "name": "Kobo Kanaeru",
-          "debut_date": "2022-03-27"
-        }
-      ]
+    {
+        "handle":  "robocosan",
+        "id":  "UCDqI2jOz0weumE8s7paEk6g"
     },
-    "hololive_en": {
-      "myth": [
-        {
-          "handle": "MoriCalliope",
-          "id": "UCL_qhgtOy0dy1Agp8vkySQg",
-          "name": "Mori Calliope",
-          "debut_date": "2020-09-12"
-        },
-        {
-          "handle": "TakanashiKiara",
-          "id": "UCHsx4Hqa-1ORjQTh9TYDhww",
-          "name": "Takanashi Kiara",
-          "debut_date": "2020-09-12"
-        },
-        {
-          "handle": "NinomaeInanis",
-          "id": "UCMwGHR0BTZuLsmjY_NT5Pwg",
-          "name": "Ninomae Ina'nis",
-          "debut_date": "2020-09-13"
-        }
-      ],
-      "project_hope": [
-        {
-          "handle": "irys",
-          "id": "UC8rcEBzJSleTkf_-agPM20g",
-          "name": "IRyS",
-          "debut_date": "2021-07-11"
-        }
-      ],
-      "council": [
-        {
-          "handle": "OuroKronii",
-          "id": "UCmbs8T6MWqUHP1tIQvSgKrg",
-          "name": "Ouro Kronii",
-          "debut_date": "2021-08-23"
-        },
-        {
-          "handle": "HakosBaelz",
-          "id": "UCgmPnx-EEeOrZSg5Tiw7ZRQ",
-          "name": "Hakos Baelz",
-          "debut_date": "2021-08-22"
-        }
-      ],
-      "advent": [
-        {
-          "handle": "ShioriNovella",
-          "id": "UCgnfPPb9JI3e9A4cXHnWbyg",
-          "name": "Shiori Novella",
-          "debut_date": "2023-08-04"
-        },
-        {
-          "handle": "KosekiBijou",
-          "id": "UC9p_lqQ0FEDz327Vgf5JwqA",
-          "name": "Koseki Bijou",
-          "debut_date": "2023-08-05"
-        },
-        {
-          "handle": "NerissaRavencroft",
-          "id": "UC_sFNM0z0MWm9A6WlKPuMMg",
-          "name": "Nerissa Ravencroft",
-          "debut_date": "2023-08-06"
-        },
-        {
-          "handle": "FUWAMOCOch",
-          "id": "UCt9H_RpQzhxzlyBxFqrdHqA",
-          "name": "FUWAMOCO",
-          "debut_date": "2023-08-07"
-        }
-      ],
-      "justice": [
-        {
-          "handle": "holoen_erbloodflame",
-          "id": "UCW5uhrG1eCBYditmhL0Ykjw",
-          "name": "Elizabeth Rose Bloodflame",
-          "debut_date": "2024-07-12"
-        },
-        {
-          "handle": "holoen_gigimurin",
-          "id": "UCDHABijvPBnJm7F-KlNME3w",
-          "name": "Gigi Murin",
-          "debut_date": "2024-07-13"
-        },
-        {
-          "handle": "holoen_ceciliaimmergreen",
-          "id": "UCvN5h1ShZtc7nly3pezRayg",
-          "name": "Cecilia Immergreen",
-          "debut_date": "2024-07-14"
-        },
-        {
-          "handle": "holoen_raorapanthera",
-          "id": "UCl69AEx4MdqMZH7Jtsm7Tig",
-          "name": "Raora Panthera",
-          "debut_date": "2024-07-15"
-        }
-      ]
+    {
+        "handle":  "sakuramiko",
+        "id":  "UC-hM6YJuNYVAmUWxeIr9FeA"
+    },
+    {
+        "handle":  "HoshimachiSuisei",
+        "id":  "UC5CwaMl1eIgY8h02uZw7u8A"
+    },
+    {
+        "handle":  "azki",
+        "id":  "UC0TXe_LYZ4scaW2XMyi5_kw"
+    },
+    {
+        "handle":  "ShirakamiFubuki",
+        "id":  "UCdn5BQ06XqgXoAxIhbqw5Rg"
+    },
+    {
+        "handle":  "NatsuiroMatsuri",
+        "id":  "UCQ0UDLQCjY0rmuxCDE38FGg"
+    },
+    {
+        "handle":  "AkaiHaato",
+        "id":  "UC1CfXB_kRs3C-zaeTG3oGyg"
+    },
+    {
+        "handle":  "AkiRosenthal",
+        "id":  "UCFTLzh12_nrtzqBPsTCqenA"
+    },
+    {
+        "handle":  "NakiriAyame",
+        "id":  "UC7fk0CB07ly8oSl0aqKkqFg"
+    },
+    {
+        "handle":  "YuzukiChoco",
+        "id":  "UC1suqwovbL1kzsoaZgFZLKg"
+    },
+    {
+        "handle":  "OozoraSubaru",
+        "id":  "UCvzGlP9oQwU--Y0r9id_jnA"
+    },
+    {
+        "handle":  "ShirakamiFubuki",
+        "id":  "UCdn5BQ06XqgXoAxIhbqw5Rg"
+    },
+    {
+        "handle":  "OokamiMio",
+        "id":  "UCp-5t9SrOQwXMU7iIjQfARg"
+    },
+    {
+        "handle":  "NekomataOkayu",
+        "id":  "UCvaTdHTWBGv3MKj3KVqJVCw"
+    },
+    {
+        "handle":  "InugamiKorone",
+        "id":  "UChAnqc_AY5_I3Px5dig3X1Q"
+    },
+    {
+        "handle":  "usadapekora",
+        "id":  "UC1DCedRgGHBdm81E1llLhOQ"
+    },
+    {
+        "handle":  "ShiranuiFlare",
+        "id":  "UCvInZx9h3jC2JzsIzoOebWg"
+    },
+    {
+        "handle":  "shiroganenoel",
+        "id":  "UCdyqAaZDKHXg4Ahi7VENThQ"
+    },
+    {
+        "handle":  "houshoumarine",
+        "id":  "UCCzUftO8KOVkV4wQG1vkUvg"
+    },
+    {
+        "handle":  "AmaneKanata",
+        "id":  "UCZlDXzGoo7d44bwdNObFacg"
+    },
+    {
+        "handle":  "TsunomakiWatame",
+        "id":  "UCqm3BQLlJfvkTsX_hvm0UmA"
+    },
+    {
+        "handle":  "TokoyamiTowa",
+        "id":  "UC1uv2Oq6kNxgATlCiez59hw"
+    },
+    {
+        "handle":  "HimemoriLuna",
+        "id":  "UCa9Y57gfeY0Zro_noHRVrnw"
+    },
+    {
+        "handle":  "YukihanaLamy",
+        "id":  "UCFKOVgVbGmX65RxO3EtH3iw"
+    },
+    {
+        "handle":  "MomosuzuNene",
+        "id":  "UCAWSyEs_Io8MtpY3m-zqILA"
+    },
+    {
+        "handle":  "ShishiroBotan",
+        "id":  "UCUKD-uaobj9jiqB-VXt71mA"
+    },
+    {
+        "handle":  "OmaruPolka",
+        "id":  "UCK9V2B22uJYu3N7eR_BT9QA"
+    },
+    {
+        "handle":  "LaplusDarknesss",
+        "id":  "UCENwRMx5Yh42zWpzURebzTw"
+    },
+    {
+        "handle":  "TakaneLui",
+        "id":  "UCs9_O1tRPMQTHQ-N_L6FU2g"
+    },
+    {
+        "handle":  "HakuiKoyori",
+        "id":  "UC6eWCld0KwmyHFbAqK3V-Rw"
+    },
+    {
+        "handle":  "KazamaIroha",
+        "id":  "UC_vMYWcDjmfdpH6r4TTn1MQ"
+    },
+    {
+        "handle":  "AyundaRisu",
+        "id":  "UCOyYb1c43VlX9rc_lT6NKQw"
+    },
+    {
+        "handle":  "MoonaHoshinova",
+        "id":  "UCP0BspO_AMEe3aQqqpo89Dg"
+    },
+    {
+        "handle":  "AiraniIofifteen",
+        "id":  "UCAoy6rzhSf4ydcYjJw3WoVg"
+    },
+    {
+        "handle":  "KureijiOllie",
+        "id":  "UCYz_5n-uDuChHtLo7My1HnQ"
+    },
+    {
+        "handle":  "AnyaMelfissa",
+        "id":  "UC727SQYUvx5pDDGQpTICNWg"
+    },
+    {
+        "handle":  "PavoliaReine",
+        "id":  "UChgTyjG-pdNvxxhdsXfHQ5Q"
+    },
+    {
+        "handle":  "VestiaZeta",
+        "id":  "UCTvHWSfBZgtxE4sILOaurIQ"
+    },
+    {
+        "handle":  "KaelaKovalskia",
+        "id":  "UCZLZ8Jjx_RN2CXloOmgTHVg"
+    },
+    {
+        "handle":  "KoboKanaeru",
+        "id":  "UCjLEmnpCNeisMxy134KPwWw"
+    },
+    {
+        "handle":  "MoriCalliope",
+        "id":  "UCL_qhgtOy0dy1Agp8vkySQg"
+    },
+    {
+        "handle":  "TakanashiKiara",
+        "id":  "UCHsx4Hqa-1ORjQTh9TYDhww"
+    },
+    {
+        "handle":  "NinomaeInanis",
+        "id":  "UCMwGHR0BTZuLsmjY_NT5Pwg"
+    },
+    {
+        "handle":  "irys",
+        "id":  "UC8rcEBzJSleTkf_-agPM20g"
+    },
+    {
+        "handle":  "OuroKronii",
+        "id":  "UCmbs8T6MWqUHP1tIQvSgKrg"
+    },
+    {
+        "handle":  "HakosBaelz",
+        "id":  "UCgmPnx-EEeOrZSg5Tiw7ZRQ"
+    },
+    {
+        "handle":  "irys",
+        "id":  "UC8rcEBzJSleTkf_-agPM20g"
+    },
+    {
+        "handle":  "OuroKronii",
+        "id":  "UCmbs8T6MWqUHP1tIQvSgKrg"
+    },
+    {
+        "handle":  "HakosBaelz",
+        "id":  "UCgmPnx-EEeOrZSg5Tiw7ZRQ"
+    },
+    {
+        "handle":  "ShioriNovella",
+        "id":  "UCgnfPPb9JI3e9A4cXHnWbyg"
+    },
+    {
+        "handle":  "KosekiBijou",
+        "id":  "UC9p_lqQ0FEDz327Vgf5JwqA"
+    },
+    {
+        "handle":  "NerissaRavencroft",
+        "id":  "UC_sFNM0z0MWm9A6WlKPuMMg"
+    },
+    {
+        "handle":  "FUWAMOCOch",
+        "id":  "UCt9H_RpQzhxzlyBxFqrdHqA"
+    },
+    {
+        "handle":  "FUWAMOCOch",
+        "id":  "UCt9H_RpQzhxzlyBxFqrdHqA"
+    },
+    {
+        "handle":  "holoen_erbloodflame",
+        "id":  "UCW5uhrG1eCBYditmhL0Ykjw"
+    },
+    {
+        "handle":  "holoen_gigimurin",
+        "id":  "UCDHABijvPBnJm7F-KlNME3w"
+    },
+    {
+        "handle":  "holoen_ceciliaimmergreen",
+        "id":  "UCvN5h1ShZtc7nly3pezRayg"
+    },
+    {
+        "handle":  "holoen_raorapanthera",
+        "id":  "UCl69AEx4MdqMZH7Jtsm7Tig"
+    },
+    {
+        "handle":  "HiodoshiAo",
+        "id":  "UCMGfV7TVTmHhEErVJg1oHBQ"
+    },
+    {
+        "handle":  "OtonoseKanade",
+        "id":  "UCWQtYtq9EOB4-I5P-3fh8lA"
+    },
+    {
+        "handle":  "IchijouRirika",
+        "id":  "UCtyWhCj3AqKh2dXctLkDtng"
+    },
+    {
+        "handle":  "JuufuuteiRaden",
+        "id":  "UCdXAk5MpyLD8594lm_OvtGQ"
+    },
+    {
+        "handle":  "TodorokiHajime",
+        "id":  "UC1iA6_NT4mtAcIII6ygrvCw"
+    },
+    {
+        "handle":  "IsakiRiona",
+        "id":  "UC9LSiN9hXI55svYEBrrK-tw"
+    },
+    {
+        "handle":  "KoganeiNiko",
+        "id":  "UCuI_opAVX6qbxZY-a-AxFuQ"
+    },
+    {
+        "handle":  "MizumiyaSu",
+        "id":  "UCjk2nKmHzgH5Xy-C5qYRd5A"
+    },
+    {
+        "handle":  "RindoChihaya",
+        "id":  "UCKMWFR6lAstLa7Vbf5dH7ig"
+    },
+    {
+        "handle":  "KikiraraVivi",
+        "id":  "UCGzTVXqMQHa4AgJVJIVvtDQ"
     }
-  }
-}
+]
