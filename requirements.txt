@@ -1,6 +1,5 @@
 aiohttp==3.12.15
 fastapi==0.116.1 
-hrequests==0.9.2
 uvicorn==0.35.0
 python-dotenv==1.1.1
 dotenv==0.9.9
