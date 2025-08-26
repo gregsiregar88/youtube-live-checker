@@ -4,20 +4,19 @@ import json
 import asyncio
 import logging
 import contextlib
-from functools import lru_cache
 from typing import Dict, List, Optional
 
 import aiohttp
 from aiohttp import TCPConnector
 from bs4 import BeautifulSoup
-from fastapi import FastAPI, Query, Request
+from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 
 # ---------------- Config ---------------- #
 
 class Config:
     HOST: str = "0.0.0.0"
-    PORT: int = int(os.getenv("PORT", 8000))
+    PORT: int = int(os.getenv("PORT", 8000))  # Railway injects PORT
     CACHE_TTL: int = 10
     ENABLE_CACHING: bool = True
     USER_AGENT: str = (
@@ -138,6 +137,14 @@ session: Optional[aiohttp.ClientSession] = None
 yt_client: Optional[YouTubeAPIClient] = None
 _warm_task: Optional[asyncio.Task] = None
 
+@app.get("/")
+async def root():
+    return {"message": "YouTube Live Status API is running 🚀", "endpoints": ["/check", "/health"]}
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
 async def fetch_html(url: str) -> Optional[str]:
     headers = {"User-Agent": config.USER_AGENT, "Accept": "text/html"}
     try:
@@ -225,6 +232,5 @@ if __name__ == "__main__":
         host=config.HOST,
         port=config.PORT,
         workers=1,
-        log_level="warning"
+        log_level="info"
     )
-
