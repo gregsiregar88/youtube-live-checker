@@ -207,30 +207,59 @@ class YouTubeAPI:
 
     async def fetch_video_details(self, session, video_ids):
         """Fetch video details from YouTube API."""
+        if not video_ids:
+            return None
+            
         id_string = ",".join(video_ids)
         url = f"https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,liveStreamingDetails&id={id_string}&key={self.api_key}"
         
-        async with session.get(url, headers=self.headers) as response:
-            return response
+        try:
+            async with session.get(url, headers=self.headers) as response:
+                return response
+        except Exception as e:
+            print(f"Error fetching video details: {e}")
+            return None
 
     def process_video_details(self, data, video_urls):
         """Process YouTube API response data."""
-        if data.get('items'):
-            snippets = [item['snippet'] for item in data['items']]
-            titles = [item['title'] for item in snippets]
-            channel_titles = [item['channelTitle'] for item in snippets]
-
-            streaming_details = [item['liveStreamingDetails'] for item in data['items']]
-            for detail in streaming_details:
-                detail['status'] = "live" if len(detail) > 2 else "upcoming"
-
-            return list(zip(channel_titles, titles, video_urls, streaming_details))
-        return []
+        combined_data = []
+        
+        if not data or 'items' not in data:
+            return combined_data
+            
+        try:
+            for i, item in enumerate(data['items']):
+                if 'snippet' not in item:
+                    continue
+                    
+                snippet = item['snippet']
+                title = snippet.get('title', 'No title')
+                channel_title = snippet.get('channelTitle', 'Unknown channel')
+                
+                # Get the corresponding video URL
+                video_url = video_urls[i] if i < len(video_urls) else None
+                
+                # Determine stream status
+                streaming_details = item.get('liveStreamingDetails', {})
+                status = "live" if streaming_details and 'actualStartTime' in streaming_details else "upcoming"
+                streaming_details['status'] = status
+                
+                combined_data.append((channel_title, title, video_url, streaming_details))
+                
+        except Exception as e:
+            print(f"Error processing video details: {e}")
+            
+        return combined_data
 
 
 def extract_video_ids(video_urls):
     """Extract video IDs from YouTube URLs."""
-    return [url.split("v=")[1] for url in video_urls if url and "v=" in url]
+    ids = []
+    for url in video_urls:
+        if url and "v=" in url:
+            video_id = url.split("v=")[1].split('&')[0]
+            ids.append(video_id)
+    return ids
 
 
 async def check_channels():
@@ -243,10 +272,10 @@ async def check_channels():
     
     # Process results
     live_handles = [(result['handle'], result['video_url']) 
-                   for result in results if str(result.get('live')).lower() == "true"]
+                   for result in results if result.get('live')]
     
     scheduled_streams = [(result['handle'], result['video_url']) 
-                        for result in results if str(result.get('scheduled')).lower() == "true"]
+                        for result in results if result.get('scheduled')]
     
     all_streams = [*live_handles, *scheduled_streams]
     video_urls = [t[1] for t in all_streams if t[1] is not None]
@@ -254,16 +283,21 @@ async def check_channels():
     
     # Fetch and process YouTube API data
     youtube_api = YouTubeAPI(api_key, headers)
+    combined_data = []
     
-    async with aiohttp.ClientSession() as session:
-        response = await youtube_api.fetch_video_details(session, video_ids)
-        
-        combined_data = []
-        if response.status == 200:
-            data = await response.json()
-            combined_data = youtube_api.process_video_details(data, video_urls)
-        else:
-            print("Error", response.status, await response.text())
+    if video_ids:
+        async with aiohttp.ClientSession() as session:
+            response = await youtube_api.fetch_video_details(session, video_ids)
+            
+            if response and response.status == 200:
+                try:
+                    data = await response.json()
+                    combined_data = youtube_api.process_video_details(data, video_urls)
+                except Exception as e:
+                    print(f"Error parsing YouTube API response: {e}")
+            else:
+                status = response.status if response else "No response"
+                print(f"YouTube API error: {status}")
     
     # Calculate performance metrics
     end_time = time.time()
@@ -313,7 +347,19 @@ async def get_live_streams():
     """Get only live streams from the last check."""
     try:
         results = await check_channels()
-        live_streams = [stream for stream in results["data"] if stream[3].get('status') == 'live']
+        # Safely access the data with proper error handling
+        if not results or "data" not in results:
+            return {"live_streams": [], "count": 0}
+            
+        live_streams = []
+        for stream in results["data"]:
+            try:
+                if len(stream) >= 4 and isinstance(stream[3], dict) and stream[3].get('status') == 'live':
+                    live_streams.append(stream)
+            except (IndexError, TypeError, AttributeError) as e:
+                print(f"Error processing stream data: {e}")
+                continue
+                
         return {
             "live_streams": live_streams,
             "count": len(live_streams)
@@ -327,7 +373,19 @@ async def get_upcoming_streams():
     """Get only upcoming streams from the last check."""
     try:
         results = await check_channels()
-        upcoming_streams = [stream for stream in results["data"] if stream[3].get('status') == 'upcoming']
+        # Safely access the data with proper error handling
+        if not results or "data" not in results:
+            return {"upcoming_streams": [], "count": 0}
+            
+        upcoming_streams = []
+        for stream in results["data"]:
+            try:
+                if len(stream) >= 4 and isinstance(stream[3], dict) and stream[3].get('status') == 'upcoming':
+                    upcoming_streams.append(stream)
+            except (IndexError, TypeError, AttributeError) as e:
+                print(f"Error processing stream data: {e}")
+                continue
+                
         return {
             "upcoming_streams": upcoming_streams,
             "count": len(upcoming_streams)
@@ -341,7 +399,7 @@ async def get_metrics():
     """Get performance metrics from the last check."""
     try:
         results = await check_channels()
-        return results["metrics"]
+        return results.get("metrics", {})
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting metrics: {str(e)}")
 
