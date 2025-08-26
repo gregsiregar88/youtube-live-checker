@@ -9,7 +9,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from functools import lru_cache
 import weakref
-#from dotenv import load_dotenv
 import hrequests
 from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException, BackgroundTasks
@@ -22,8 +21,6 @@ import logging
 # Configure logging
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
-
-#load_dotenv()
 
 # Configuration
 @dataclass
