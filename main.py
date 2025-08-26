@@ -29,16 +29,14 @@ app = FastAPI(title="YouTube Live Checker API", version="1.0.0")
 # Add CORS middleware to allow requests from different origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-
 
 class YTLiveChecker:
     def __init__(self, channels_file=None):
-        # Use absolute path for Railway
         self.channels_file = channels_file or os.path.join(
             os.path.dirname(os.path.abspath(__file__)), 
             'channels_with_id.json'
@@ -58,7 +56,6 @@ class YTLiveChecker:
         }
 
     def load_channels(self):
-        """Load channels from JSON file."""
         try:
             with open(self.channels_file, 'r') as f:
                 return json.load(f)
@@ -70,10 +67,8 @@ class YTLiveChecker:
             return []
 
     async def check_all_channels(self):
-        """Check all channels for live status asynchronously."""
         if not self.channels:
             return []
-            
         async with aiohttp.ClientSession(
             headers={
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:143.0) Gecko/20100101 Firefox/143.0",
@@ -89,19 +84,16 @@ class YTLiveChecker:
             return await asyncio.gather(*tasks)
 
     async def check_channel(self, session, url, handle, channel_id):
-        """Check if a specific channel is live."""
         try:
             async with session.get(url) as resp:
                 if resp.status != 200:
                     return self.make_result(handle, channel_id, error=f"HTTP {resp.status}")
                 text = await resp.text()
 
-            # Direct check for live stream
             if '"isLiveNow":true' in text:
                 return self.make_result(handle, channel_id, live=True, 
                                        video_url=self.extract_canonical_url(text))
 
-            # Check for scheduled streams
             canonical_url = self.extract_canonical_url(text)
             if canonical_url and '/watch?v=' in canonical_url:
                 video_id = canonical_url.split('watch?v=')[1].split('&')[0]
@@ -112,7 +104,6 @@ class YTLiveChecker:
                         return self.make_result(handle, channel_id, live=False, 
                                                video_url=canonical_url, scheduled=True)
 
-            # Check for alternative video URLs
             alt_url = self.find_alt_video(text)
             if alt_url:
                 return await self.check_alt_url(session, alt_url, handle, channel_id)
@@ -123,7 +114,6 @@ class YTLiveChecker:
             return self.make_result(handle, channel_id, error=str(e))
 
     async def check_alt_url(self, session, alt_url, handle, channel_id):
-        """Check alternative URL for live status."""
         try:
             async with session.get(alt_url) as alt_resp:
                 if alt_resp.status == 200:
@@ -137,7 +127,6 @@ class YTLiveChecker:
             return self.make_result(handle, channel_id, error=f"Alt URL check failed: {str(e)}")
 
     def make_result(self, handle, channel_id, live=False, video_url=None, scheduled=False, error=None):
-        """Create a standardized result dictionary."""
         return {
             "handle": handle,
             "channel_id": channel_id,
@@ -148,7 +137,6 @@ class YTLiveChecker:
         }
 
     def extract_canonical_url(self, html):
-        """Extract canonical URL from HTML."""
         start = html.find('<link rel="canonical" href="')
         if start == -1:
             return None
@@ -157,7 +145,6 @@ class YTLiveChecker:
         return html[start:end] if end != -1 else None
 
     def is_live(self, html):
-        """Determine if stream is live based on HTML content."""
         if self.scheduled_pattern.search(html):
             return False
         if '"isLiveNow":true' in html:
@@ -170,90 +157,83 @@ class YTLiveChecker:
         return False
 
     def find_alt_video(self, html):
-        """Find alternative video URLs in HTML."""
         start = 0
         while True:
             start = html.find('id="video-title"', start)
             if start == -1:
                 break
-                
             href_start = html.find('href="', start)
             if href_start == -1:
                 start += 1
                 continue
-                
             href_start += len('href="')
             href_end = html.find('"', href_start)
             if href_end == -1:
                 start += 1
                 continue
-                
             href = html[href_start:href_end]
             if '/watch?v=' in href:
                 video_id = href.split('/watch?v=')[1].split('&')[0]
                 if video_id not in self.WAITING_ROOM_URLS:
                     return f"https://www.youtube.com{href}"
-                    
             start = href_end + 1
         return None
 
-
 class YouTubeAPI:
-    """Handle YouTube API requests and data processing."""
-    
     def __init__(self, api_key, headers):
         self.api_key = api_key
         self.headers = headers
 
     async def fetch_video_details(self, session, video_ids):
-        """Fetch video details from YouTube API."""
         if not video_ids:
             return None
-            
         id_string = ",".join(video_ids)
         url = f"https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,liveStreamingDetails&id={id_string}&key={self.api_key}"
-        print(url)
+        print(f"Fetching video details from: {url}")
         try:
             async with session.get(url, headers=self.headers) as response:
-                return response
+                if response.status != 200:
+                    print(f"API request failed with status {response.status}")
+                    return None
+                try:
+                    data = await response.json()
+                    if not isinstance(data, dict) or 'items' not in data:
+                        print("Invalid API response: 'items' not found or data is not a dictionary")
+                        return None
+                    return data
+                except json.JSONDecodeError as e:
+                    print(f"Error decoding JSON response: {e}")
+                    return None
         except Exception as e:
             print(f"Error fetching video details: {e}")
             return None
 
     def process_video_details(self, data, video_urls):
-        """Process YouTube API response data."""
         combined_data = []
-        
-        if not data or 'items' not in data:
+        if not data or not isinstance(data, dict) or 'items' not in data:
+            print("No valid data to process or data is not a dictionary")
             return combined_data
-            
+
         try:
             for i, item in enumerate(data['items']):
-                if 'snippet' not in item:
+                if not isinstance(item, dict) or 'snippet' not in item:
+                    print(f"Skipping invalid item at index {i}: {item}")
                     continue
-                    
+
                 snippet = item['snippet']
                 title = snippet.get('title', 'No title')
                 channel_title = snippet.get('channelTitle', 'Unknown channel')
-                
-                # Get the corresponding video URL
                 video_url = video_urls[i] if i < len(video_urls) else None
-                
-                # Determine stream status
                 streaming_details = item.get('liveStreamingDetails', {})
                 status = "live" if streaming_details and 'actualStartTime' in streaming_details else "upcoming"
                 streaming_details['status'] = status
-                
                 combined_data.append((channel_title, title, video_url, streaming_details))
-                
+
         except Exception as e:
             print(f"Error processing video details: {e}")
-            
         return combined_data
 
-
 def extract_video_ids(video_urls):
-    """Extract video IDs from YouTube URLs."""
     ids = []
     for url in video_urls:
         if url and "v=" in url:
@@ -261,49 +241,32 @@ def extract_video_ids(video_urls):
             ids.append(video_id)
     return ids
 
-
 async def check_channels():
-    """Check all channels and return processed results."""
     start_time = time.time()
-    
-    # Check all channels
     checker = YTLiveChecker()
     results = await checker.check_all_channels()
-    
-    # Process results
     live_handles = [(result['handle'], result['video_url']) 
                    for result in results if result.get('live')]
-    
     scheduled_streams = [(result['handle'], result['video_url']) 
                         for result in results if result.get('scheduled')]
-    
     all_streams = [*live_handles, *scheduled_streams]
     video_urls = [t[1] for t in all_streams if t[1] is not None]
     video_ids = extract_video_ids(video_urls)
-    
-    # Fetch and process YouTube API data
     youtube_api = YouTubeAPI(api_key, headers)
     combined_data = []
-    
+
     if video_ids:
         async with aiohttp.ClientSession() as session:
-            response = await youtube_api.fetch_video_details(session, video_ids)
-            
-            if response and response.status == 200:
-                try:
-                    data = await response.json()
-                    combined_data = youtube_api.process_video_details(data, video_urls)
-                except Exception as e:
-                    print(f"Error parsing YouTube API response: {e}")
+            data = await youtube_api.fetch_video_details(session, video_ids)
+            if data:
+                combined_data = youtube_api.process_video_details(data, video_urls)
             else:
-                status = response.status if response else "No response"
-                print(f"YouTube API error: {status}")
-    
-    # Calculate performance metrics
+                print("No valid data returned from YouTube API")
+
     end_time = time.time()
     duration_ms = (end_time - start_time) * 1000
     avg_time = duration_ms / len(results) if results else 0
-    
+
     return {
         "data": combined_data,
         "metrics": {
@@ -315,11 +278,8 @@ async def check_channels():
         }
     }
 
-
-# FastAPI Routes
 @app.get("/")
 async def root():
-    """Root endpoint with API information."""
     return {
         "message": "YouTube Live Checker API",
         "version": "1.0.0",
@@ -331,35 +291,34 @@ async def root():
         }
     }
 
-
 @app.get("/check")
 async def check_all_channels():
-    """Check all channels and return results."""
     try:
         results = await check_channels()
         return JSONResponse(content=results)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error checking channels: {str(e)}")
 
-
 @app.get("/live")
 async def get_live_streams():
-    """Get only live streams from the last check."""
     try:
         results = await check_channels()
-        # Safely access the data with proper error handling
-        if not results or "data" not in results:
+        if not results or "data" not in results or not isinstance(results["data"], list):
+            print("Invalid or empty data in results")
             return {"live_streams": [], "count": 0}
-            
+
         live_streams = []
         for stream in results["data"]:
             try:
-                if len(stream) >= 4 and isinstance(stream[3], dict) and stream[3].get('status') == 'live':
+                if not isinstance(stream, tuple) or len(stream) < 4:
+                    print(f"Skipping invalid stream format: {stream}")
+                    continue
+                if isinstance(stream[3], dict) and stream[3].get('status') == 'live':
                     live_streams.append(stream)
             except (IndexError, TypeError, AttributeError) as e:
                 print(f"Error processing stream data: {e}")
                 continue
-                
+
         return {
             "live_streams": live_streams,
             "count": len(live_streams)
@@ -367,25 +326,26 @@ async def get_live_streams():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting live streams: {str(e)}")
 
-
 @app.get("/upcoming")
 async def get_upcoming_streams():
-    """Get only upcoming streams from the last check."""
     try:
         results = await check_channels()
-        # Safely access the data with proper error handling
-        if not results or "data" not in results:
+        if not results or "data" not in results or not isinstance(results["data"], list):
+            print("Invalid or empty data in results")
             return {"upcoming_streams": [], "count": 0}
-            
+
         upcoming_streams = []
         for stream in results["data"]:
             try:
-                if len(stream) >= 4 and isinstance(stream[3], dict) and stream[3].get('status') == 'upcoming':
+                if not isinstance(stream, tuple) or len(stream) < 4:
+                    print(f"Skipping invalid stream format: {stream}")
+                    continue
+                if isinstance(stream[3], dict) and stream[3].get('status') == 'upcoming':
                     upcoming_streams.append(stream)
             except (IndexError, TypeError, AttributeError) as e:
                 print(f"Error processing stream data: {e}")
                 continue
-                
+
         return {
             "upcoming_streams": upcoming_streams,
             "count": len(upcoming_streams)
@@ -393,19 +353,14 @@ async def get_upcoming_streams():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting upcoming streams: {str(e)}")
 
-
 @app.get("/metrics")
 async def get_metrics():
-    """Get performance metrics from the last check."""
     try:
         results = await check_channels()
         return results.get("metrics", {})
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error getting metrics: {str(e)}")
 
-
 if __name__ == "__main__":
-    # Get port from Railway environment variable or default to 8000
     port = int(os.getenv("PORT", 8000))
-    # Run the FastAPI app with uvicorn
     uvicorn.run(app, host="0.0.0.0", port=port)
