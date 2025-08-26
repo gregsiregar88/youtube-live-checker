@@ -29,10 +29,8 @@ if not api_key:
     logger.error("API_KEY environment variable is not set")
     raise ValueError("API_KEY environment variable is not set")
 
-# Initialize FastAPI app
 app = FastAPI(title="YouTube Live Checker API", version="1.0.0")
 
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -43,10 +41,9 @@ app.add_middleware(
 
 class YTLiveChecker:
     def __init__(self, channels_file=None):
-        self.channels_file = channels_file or os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), 
-            'channels_with_id.json'
-        )
+        default_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'channels_with_id.json')
+        self.channels_file = channels_file or os.getenv("CHANNELS_FILE", default_path)
+        logger.info(f"Using channels file: {self.channels_file}")
         self.channels = self.load_channels()
         self.scheduled_pattern = re.compile(r'(Scheduled for|Live in|Premieres|Waiting for)', re.IGNORECASE)
         self.WAITING_ROOM_URLS = {
@@ -62,22 +59,26 @@ class YTLiveChecker:
         }
 
     def load_channels(self):
+        if not os.path.exists(self.channels_file):
+            logger.error(f"Channels file not found at {self.channels_file}")
+            return []
         try:
             with open(self.channels_file, 'r') as f:
                 channels = json.load(f)
                 if not isinstance(channels, list):
-                    logger.error("channels_with_id.json must contain a list")
+                    logger.error(f"channels_with_id.json must contain a list, got: {type(channels)}")
                     return []
                 for channel in channels:
                     if not isinstance(channel, dict) or 'handle' not in channel or 'id' not in channel:
                         logger.error(f"Invalid channel format: {channel}")
                         return []
+                logger.info(f"Loaded {len(channels)} channels from {self.channels_file}")
                 return channels
-        except FileNotFoundError:
-            logger.error(f"Channels file not found at {self.channels_file}")
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in channels file: {str(e)}")
             return []
-        except json.JSONDecodeError:
-            logger.error("Invalid JSON in channels file")
+        except Exception as e:
+            logger.error(f"Error loading channels file: {str(e)}")
             return []
 
     async def check_all_channels(self):
