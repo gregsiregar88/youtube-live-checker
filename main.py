@@ -17,7 +17,7 @@ from fastapi.responses import JSONResponse
 
 class Config:
     HOST: str = "0.0.0.0"
-    PORT: int = int(os.getenv("PORT", "8000"))
+    PORT: int = int(os.getenv("PORT", 8000))
     CACHE_TTL: int = 10
     ENABLE_CACHING: bool = True
     USER_AGENT: str = (
@@ -218,7 +218,13 @@ async def warm_cache_periodically():
         await asyncio.sleep(300)
 
 # ---------------- Main ---------------- #
-
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host=config.HOST, port=config.PORT, workers=1, log_level="warning")
+    uvicorn.run(
+        app,
+        host=config.HOST,
+        port=config.PORT,
+        workers=1,
+        log_level="warning"
+    )
+
