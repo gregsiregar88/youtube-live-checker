@@ -212,7 +212,7 @@ class YouTubeAPI:
             
         id_string = ",".join(video_ids)
         url = f"https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,liveStreamingDetails&id={id_string}&key={self.api_key}"
-        
+        print(url)
         try:
             async with session.get(url, headers=self.headers) as response:
                 return response
