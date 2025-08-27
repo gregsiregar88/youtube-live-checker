@@ -15,6 +15,8 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import logging
+from typing import Dict, List, Set, Optional
+from urllib.parse import urlparse, parse_qs, urlunparse
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -41,6 +43,25 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add a simple cache mechanism
+class SimpleCache:
+    def __init__(self, ttl_seconds: int = 30):
+        self.cache: Dict[str, dict] = {}
+        self.ttl = ttl_seconds
+        self.timestamps: Dict[str, float] = {}
+    
+    def get(self, key: str) -> Optional[dict]:
+        if key in self.cache and time.time() - self.timestamps[key] < self.ttl:
+            return self.cache[key]
+        return None
+    
+    def set(self, key: str, value: dict):
+        self.cache[key] = value
+        self.timestamps[key] = time.time()
+
+# Global cache instance
+cache = SimpleCache(ttl_seconds=30)
 
 class YTLiveChecker:
     def __init__(self, channels_file=None):
@@ -109,6 +130,36 @@ class YTLiveChecker:
             ]
             return await asyncio.gather(*tasks)
 
+    def normalize_youtube_url(self, url: str) -> str:
+        """Normalize YouTube URL by removing tracking parameters and standardizing format"""
+        if not url or '/watch?v=' not in url:
+            return url
+            
+        try:
+            parsed = urlparse(url)
+            query_params = parse_qs(parsed.query)
+            
+            # Keep only the essential parameters
+            essential_params = {}
+            if 'v' in query_params:
+                essential_params['v'] = query_params['v'][0]
+            
+            # Rebuild the URL without tracking parameters
+            normalized_query = '&'.join([f"{k}={v}" for k, v in essential_params.items()])
+            normalized_url = urlunparse((
+                parsed.scheme,
+                parsed.netloc,
+                parsed.path,
+                parsed.params,
+                normalized_query,
+                ''  # Remove fragment
+            ))
+            
+            return normalized_url
+        except Exception as e:
+            logger.error(f"Error normalizing URL {url}: {str(e)}")
+            return url
+
     async def check_channel(self, session, url, handle, channel_id):
         try:
             async with session.get(url) as resp:
@@ -117,18 +168,22 @@ class YTLiveChecker:
                     return self.make_result(handle, channel_id, error=f"HTTP {resp.status}")
                 text = await resp.text()
             if '"isLiveNow":true' in text:
-                return self.make_result(handle, channel_id, live=True, video_url=self.extract_canonical_url(text))
+                canonical_url = self.extract_canonical_url(text)
+                normalized_url = self.normalize_youtube_url(canonical_url)
+                return self.make_result(handle, channel_id, live=True, video_url=normalized_url)
             canonical_url = self.extract_canonical_url(text)
             if canonical_url and '/watch?v=' in canonical_url:
                 video_id = canonical_url.split('watch?v=')[1].split('&')[0]
                 if video_id not in self.WAITING_ROOM_URLS:
+                    normalized_url = self.normalize_youtube_url(canonical_url)
                     if self.is_live(text):
-                        return self.make_result(handle, channel_id, live=True, video_url=canonical_url)
+                        return self.make_result(handle, channel_id, live=True, video_url=normalized_url)
                     else:
-                        return self.make_result(handle, channel_id, live=False, video_url=canonical_url, scheduled=True)
+                        return self.make_result(handle, channel_id, live=False, video_url=normalized_url, scheduled=True)
             alt_url = self.find_alt_video(text)
             if alt_url:
-                return await self.check_alt_url(session, alt_url, handle, channel_id)
+                normalized_alt_url = self.normalize_youtube_url(alt_url)
+                return await self.check_alt_url(session, normalized_alt_url, handle, channel_id)
             return self.make_result(handle, channel_id)
         except Exception as e:
             logger.error(f"Error checking channel {handle}: {str(e)}")
@@ -240,7 +295,12 @@ class YouTubeAPI:
         logger.debug(f"Processing {len(data['items'])} items with {len(video_urls)} video URLs")
         try:
             # Create a mapping of video_id to video_url to avoid index mismatches
-            video_url_map = {url.split('v=')[1].split('&')[0]: url for url in video_urls if url and 'v=' in url}
+            video_url_map = {}
+            for url in video_urls:
+                if url and 'v=' in url:
+                    video_id = url.split('v=')[1].split('&')[0]
+                    video_url_map[video_id] = url
+            
             for i, item in enumerate(data['items']):
                 if not isinstance(item, dict):
                     logger.warning(f"Skipping non-dict item at index {i}: {item}")
@@ -281,6 +341,13 @@ def extract_video_ids(video_urls):
     return list(set(ids))  # Remove duplicates
 
 async def check_channels():
+    # Check cache first
+    cache_key = "check_channels_result"
+    cached_result = cache.get(cache_key)
+    if cached_result:
+        logger.info("Returning cached result")
+        return cached_result
+        
     start_time = time.time()
     checker = YTLiveChecker()
     results = await checker.check_all_channels()
@@ -316,7 +383,7 @@ async def check_channels():
     duration_ms = (end_time - start_time) * 1000
     avg_time = duration_ms / len(results) if results else 0
 
-    return {
+    result = {
         "data": combined_data,
         "metrics": {
             "total_execution_time_ms": duration_ms,
@@ -326,6 +393,10 @@ async def check_channels():
             "scheduled_streams_count": len(scheduled_streams)
         }
     }
+    
+    # Cache the result
+    cache.set(cache_key, result)
+    return result
 
 @app.get("/")
 async def root():
