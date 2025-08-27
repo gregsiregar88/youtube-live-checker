@@ -393,7 +393,6 @@ async def get_upcoming_streams():
                     continue
                 if stream[3].get('status') == 'upcoming':
                     upcoming_streams.append(stream)
-                    logger.debug(f"Added upcoming stream: {stream}")
             except Exception as e:
                 logger.error(f"Error processing stream: {str(e)}, Stream: {stream}")
                 continue
