@@ -42,6 +42,7 @@ app.add_middleware(
 class YTLiveChecker:
     def __init__(self, channels_file=None):
         default_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'channels_with_id.json')
+    
         self.channels_file = channels_file or os.getenv("CHANNELS_FILE", default_path)
         logger.info(f"Using channels file: {self.channels_file}")
         self.channels = self.load_channels()
@@ -78,7 +79,7 @@ class YTLiveChecker:
                         return []
                 # Remove duplicate channels
                 unique_channels = {tuple(channel.items()): channel for channel in channels}.values()
-                logger.info(f"Loaded {len(unique_channels)} unique channels from {self.channels_file}: {list(unique_channels)}")
+                logger.info(f"Loaded {len(unique_channels)} channels")
                 return list(unique_channels)
         except json.JSONDecodeError as e:
             logger.error(f"Invalid JSON in channels file {self.channels_file}: {str(e)}, content: {content}")
@@ -214,7 +215,6 @@ class YouTubeAPI:
                     return None
                 try:
                     data = await response.json()
-                    logger.debug(f"API response data: {json.dumps(data, indent=2)}")
                     if not isinstance(data, dict):
                         logger.error(f"API response is not a dictionary: {data}")
                         return None
@@ -290,7 +290,6 @@ async def check_channels():
     all_streams = [*live_handles, *scheduled_streams]
     video_urls = [t[1] for t in all_streams if t[1] is not None]
     video_ids = extract_video_ids(video_urls)
-    logger.debug(f"Video URLs: {video_urls}, Video IDs: {video_ids}")
     youtube_api = YouTubeAPI(api_key, headers)
     combined_data = []
 
