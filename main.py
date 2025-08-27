@@ -5,7 +5,6 @@ import re
 import json
 import os
 import asyncio
-import aiohttp
 import time
 import sys
 from dotenv import load_dotenv
@@ -17,6 +16,7 @@ import uvicorn
 import logging
 from typing import Dict, List, Set, Optional
 from urllib.parse import urlparse, parse_qs, urlunparse
+from playwright.async_api import async_playwright
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -116,19 +116,46 @@ class YTLiveChecker:
         if not self.channels:
             logger.warning("No channels to check")
             return []
-        async with aiohttp.ClientSession(
-            headers={
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:143.0) Gecko/20100101 Firefox/143.0",
-                "Accept-Language": "en-US,en;q=0.5",
-            },
-            timeout=aiohttp.ClientTimeout(total=5)
-        ) as session:
-            tasks = [
-                self.check_channel(session, f"https://www.youtube.com/@{channel['handle']}/live", 
-                                  channel['handle'], channel['id'])
-                for channel in self.channels
-            ]
-            return await asyncio.gather(*tasks)
+        
+        async with async_playwright() as p:
+            # Launch browser with specific options to avoid detection
+            browser = await p.chromium.launch(
+                headless=True,
+                args=[
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-accelerated-2d-canvas',
+                    '--no-first-run',
+                    '--no-zygote',
+                    '--disable-gpu',
+                    '--window-size=1920,1080'
+                ]
+            )
+            
+            # Create a new context with specific settings
+            context = await browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+                viewport={'width': 1920, 'height': 1080},
+                java_script_enabled=True
+            )
+            
+            # Block images and videos to improve performance
+            await context.route("**/*", lambda route: route.abort() 
+                if route.request.resource_type in ["image", "media", "font"] 
+                else route.continue_()
+            )
+            
+            try:
+                tasks = [
+                    self.check_channel(context, f"https://www.youtube.com/@{channel['handle']}/live", 
+                                      channel['handle'], channel['id'])
+                    for channel in self.channels
+                ]
+                return await asyncio.gather(*tasks)
+            finally:
+                await context.close()
+                await browser.close()
 
     def normalize_youtube_url(self, url: str) -> str:
         """Normalize YouTube URL by removing tracking parameters and standardizing format"""
@@ -160,46 +187,71 @@ class YTLiveChecker:
             logger.error(f"Error normalizing URL {url}: {str(e)}")
             return url
 
-    async def check_channel(self, session, url, handle, channel_id):
+    async def check_channel(self, context, url, handle, channel_id):
         try:
-            async with session.get(url) as resp:
-                if resp.status != 200:
-                    logger.warning(f"HTTP {resp.status} for {url}")
-                    return self.make_result(handle, channel_id, error=f"HTTP {resp.status}")
-                text = await resp.text()
-            if '"isLiveNow":true' in text:
-                canonical_url = self.extract_canonical_url(text)
+            page = await context.new_page()
+            
+            # Set a reasonable timeout
+            page.set_default_timeout(10000)
+            
+            # Navigate to the URL
+            await page.goto(url, wait_until='domcontentloaded')
+            
+            # Wait for the page to load completely
+            await page.wait_for_load_state('networkidle', timeout=10000)
+            
+            # Get the page content
+            content = await page.content()
+            
+            if '"isLiveNow":true' in content:
+                canonical_url = self.extract_canonical_url(content)
                 normalized_url = self.normalize_youtube_url(canonical_url)
+                await page.close()
                 return self.make_result(handle, channel_id, live=True, video_url=normalized_url)
-            canonical_url = self.extract_canonical_url(text)
+            
+            canonical_url = self.extract_canonical_url(content)
             if canonical_url and '/watch?v=' in canonical_url:
                 video_id = canonical_url.split('watch?v=')[1].split('&')[0]
                 if video_id not in self.WAITING_ROOM_URLS:
                     normalized_url = self.normalize_youtube_url(canonical_url)
-                    if self.is_live(text):
+                    if self.is_live(content):
+                        await page.close()
                         return self.make_result(handle, channel_id, live=True, video_url=normalized_url)
                     else:
+                        await page.close()
                         return self.make_result(handle, channel_id, live=False, video_url=normalized_url, scheduled=True)
-            alt_url = self.find_alt_video(text)
+            
+            alt_url = self.find_alt_video(content)
             if alt_url:
                 normalized_alt_url = self.normalize_youtube_url(alt_url)
-                return await self.check_alt_url(session, normalized_alt_url, handle, channel_id)
+                await page.close()
+                return await self.check_alt_url(context, normalized_alt_url, handle, channel_id)
+            
+            await page.close()
             return self.make_result(handle, channel_id)
         except Exception as e:
             logger.error(f"Error checking channel {handle}: {str(e)}")
+            if 'page' in locals():
+                await page.close()
             return self.make_result(handle, channel_id, error=str(e))
 
-    async def check_alt_url(self, session, alt_url, handle, channel_id):
+    async def check_alt_url(self, context, alt_url, handle, channel_id):
         try:
-            async with session.get(alt_url) as alt_resp:
-                if alt_resp.status == 200:
-                    alt_text = await alt_resp.text()
-                    if self.is_live(alt_text):
-                        return self.make_result(handle, channel_id, live=True, video_url=alt_url)
-                    else:
-                        return self.make_result(handle, channel_id, live=False, video_url=alt_url, scheduled=True)
+            page = await context.new_page()
+            await page.goto(alt_url, wait_until='domcontentloaded')
+            await page.wait_for_load_state('networkidle', timeout=10000)
+            content = await page.content()
+            
+            if self.is_live(content):
+                await page.close()
+                return self.make_result(handle, channel_id, live=True, video_url=alt_url)
+            else:
+                await page.close()
+                return self.make_result(handle, channel_id, live=False, video_url=alt_url, scheduled=True)
         except Exception as e:
             logger.error(f"Error checking alt URL {alt_url}: {str(e)}")
+            if 'page' in locals():
+                await page.close()
             return self.make_result(handle, channel_id, error=f"Alt URL check failed: {str(e)}")
 
     def make_result(self, handle, channel_id, live=False, video_url=None, scheduled=False, error=None):
@@ -266,23 +318,24 @@ class YouTubeAPI:
         url = f"https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,liveStreamingDetails&id={id_string}&key={self.api_key}"
         logger.debug(f"Fetching video details from: {url}")
         try:
-            async with session.get(url, headers=self.headers) as response:
-                logger.debug(f"API response status: {response.status}")
-                if response.status != 200:
-                    logger.error(f"API request failed with status {response.status}")
-                    return None
-                try:
-                    data = await response.json()
-                    if not isinstance(data, dict):
-                        logger.error(f"API response is not a dictionary: {data}")
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=self.headers) as response:
+                    logger.debug(f"API response status: {response.status}")
+                    if response.status != 200:
+                        logger.error(f"API request failed with status {response.status}")
                         return None
-                    if 'items' not in data:
-                        logger.error("API response missing 'items' key")
+                    try:
+                        data = await response.json()
+                        if not isinstance(data, dict):
+                            logger.error(f"API response is not a dictionary: {data}")
+                            return None
+                        if 'items' not in data:
+                            logger.error("API response missing 'items' key")
+                            return None
+                        return data
+                    except json.JSONDecodeError as e:
+                        logger.error(f"Error decoding JSON response: {e}")
                         return None
-                    return data
-                except json.JSONDecodeError as e:
-                    logger.error(f"Error decoding JSON response: {e}")
-                    return None
         except Exception as e:
             logger.error(f"Error fetching video details: {str(e)}")
             return None
