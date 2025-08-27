@@ -7,9 +7,7 @@ import os
 import asyncio
 import aiohttp
 import time
-import sys
 from dotenv import load_dotenv
-from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,7 +15,7 @@ import uvicorn
 import logging
 
 # Set up logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 load_dotenv()
@@ -45,7 +43,6 @@ app.add_middleware(
 class YTLiveChecker:
     def __init__(self, channels_file=None):
         default_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'channels_with_id.json')
-    
         self.channels_file = channels_file or os.getenv("CHANNELS_FILE", default_path)
         logger.info(f"Using channels file: {self.channels_file}")
         self.channels = self.load_channels()
@@ -64,36 +61,29 @@ class YTLiveChecker:
 
     def load_channels(self):
         if not os.path.exists(self.channels_file):
-            logger.error(f"Channels file not found at {self.channels_file}")
+            logger.warning(f"Channels file not found at {self.channels_file}")
             return []
         try:
             with open(self.channels_file, 'r') as f:
                 content = f.read()
                 if not content.strip():
-                    logger.error(f"Channels file {self.channels_file} is empty")
+                    logger.warning(f"Channels file {self.channels_file} is empty")
                     return []
                 channels = json.loads(content)
                 if not isinstance(channels, list):
-                    logger.error(f"channels_with_id.json must contain a list, got: {type(channels)}, content: {content}")
+                    logger.warning(f"channels_with_id.json must contain a list")
                     return []
                 for channel in channels:
                     if not isinstance(channel, dict) or 'handle' not in channel or 'id' not in channel:
-                        logger.error(f"Invalid channel format in {self.channels_file}: {channel}, full content: {content}")
+                        logger.warning(f"Invalid channel format in {self.channels_file}: {channel}")
                         return []
-                # Remove duplicate channels
                 unique_channels = {tuple(channel.items()): channel for channel in channels}.values()
-                logger.info(f"Loaded {len(unique_channels)} channels")
                 return list(unique_channels)
-        except json.JSONDecodeError as e:
-            logger.error(f"Invalid JSON in channels file {self.channels_file}: {str(e)}, content: {content}")
-            return []
-        except Exception as e:
-            logger.error(f"Error loading channels file {self.channels_file}: {str(e)}, content: {content}")
+        except Exception:
             return []
 
     async def check_all_channels(self):
         if not self.channels:
-            logger.warning("No channels to check")
             return []
         async with aiohttp.ClientSession(
             headers={
@@ -113,12 +103,11 @@ class YTLiveChecker:
         try:
             async with session.get(url) as resp:
                 if resp.status != 200:
-                    logger.warning(f"HTTP {resp.status} for {url}")
                     return self.make_result(handle, channel_id, error=f"HTTP {resp.status}")
                 text = await resp.text()
-            if '"isLiveNow":true' in text:
-                return self.make_result(handle, channel_id, live=True, video_url=self.extract_canonical_url(text))
             canonical_url = self.extract_canonical_url(text)
+            if '"isLiveNow":true' in text:
+                return self.make_result(handle, channel_id, live=True, video_url=canonical_url)
             if canonical_url and '/watch?v=' in canonical_url:
                 video_id = canonical_url.split('watch?v=')[1].split('&')[0]
                 if video_id not in self.WAITING_ROOM_URLS:
@@ -131,7 +120,6 @@ class YTLiveChecker:
                 return await self.check_alt_url(session, alt_url, handle, channel_id)
             return self.make_result(handle, channel_id)
         except Exception as e:
-            logger.error(f"Error checking channel {handle}: {str(e)}")
             return self.make_result(handle, channel_id, error=str(e))
 
     async def check_alt_url(self, session, alt_url, handle, channel_id):
@@ -144,7 +132,6 @@ class YTLiveChecker:
                     else:
                         return self.make_result(handle, channel_id, live=False, video_url=alt_url, scheduled=True)
         except Exception as e:
-            logger.error(f"Error checking alt URL {alt_url}: {str(e)}")
             return self.make_result(handle, channel_id, error=f"Alt URL check failed: {str(e)}")
 
     def make_result(self, handle, channel_id, live=False, video_url=None, scheduled=False, error=None):
@@ -170,9 +157,8 @@ class YTLiveChecker:
             return False
         if '"isLiveNow":true' in html or 'hqdefault_live.jpg' in html:
             return True
-        if 'watching now' in html.lower():
-            if re.search(r'(\d+[,.]?\d*\s*watching now)', html, re.IGNORECASE):
-                return True
+        if 'watching now' in html.lower() and re.search(r'(\d+[,.]?\d*\s*watching now)', html, re.IGNORECASE):
+            return True
         return False
 
     def find_alt_video(self, html):
@@ -205,50 +191,35 @@ class YouTubeAPI:
 
     async def fetch_video_details(self, session, video_ids):
         if not video_ids:
-            logger.info("No video IDs to fetch")
             return None
         id_string = ",".join(video_ids)
         url = f"https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,liveStreamingDetails&id={id_string}&key={self.api_key}"
-        logger.debug(f"Fetching video details from: {url}")
         try:
             async with session.get(url, headers=self.headers) as response:
-                logger.debug(f"API response status: {response.status}")
                 if response.status != 200:
-                    logger.error(f"API request failed with status {response.status}")
                     return None
                 try:
                     data = await response.json()
-                    if not isinstance(data, dict):
-                        logger.error(f"API response is not a dictionary: {data}")
-                        return None
-                    if 'items' not in data:
-                        logger.error("API response missing 'items' key")
+                    if not isinstance(data, dict) or 'items' not in data:
                         return None
                     return data
-                except json.JSONDecodeError as e:
-                    logger.error(f"Error decoding JSON response: {e}")
+                except json.JSONDecodeError:
                     return None
-        except Exception as e:
-            logger.error(f"Error fetching video details: {str(e)}")
+        except Exception:
             return None
 
     def process_video_details(self, data, video_urls):
         combined_data = []
         if not data or not isinstance(data, dict) or 'items' not in data:
-            logger.error(f"Invalid data for processing: {data}")
             return combined_data
-        logger.debug(f"Processing {len(data['items'])} items with {len(video_urls)} video URLs")
         try:
-            # Create a mapping of video_id to video_url to avoid index mismatches
             video_url_map = {url.split('v=')[1].split('&')[0]: url for url in video_urls if url and 'v=' in url}
             for i, item in enumerate(data['items']):
                 if not isinstance(item, dict):
-                    logger.warning(f"Skipping non-dict item at index {i}: {item}")
                     continue
                 video_id = item.get('id', 'unknown')
                 snippet = item.get('snippet')
                 if not isinstance(snippet, dict):
-                    logger.warning(f"Skipping item with invalid snippet for video {video_id} at index {i}: {snippet}")
                     continue
                 title = snippet.get('title', 'No title')
                 channel_title = snippet.get('channelTitle', 'Unknown channel')
@@ -256,13 +227,12 @@ class YouTubeAPI:
                 thumbnail = snippet.get("thumbnails", "No thumbnails")
                 streaming_details = item.get('liveStreamingDetails', {})
                 if not isinstance(streaming_details, dict):
-                    logger.warning(f"Invalid streaming_details for video {video_id} at index {i}: {streaming_details}")
                     continue
                 status = "live" if streaming_details.get('actualStartTime') else "upcoming"
                 streaming_details['status'] = status
                 combined_data.append((channel_title, title, video_url, thumbnail, streaming_details))
-        except Exception as e:
-            logger.error(f"Error processing video details: {str(e)}, item: {item}")
+        except Exception:
+            pass
         return combined_data
 
 def extract_video_ids(video_urls):
@@ -271,13 +241,12 @@ def extract_video_ids(video_urls):
         if url and "v=" in url:
             video_id = url.split("v=")[1].split('&')[0]
             ids.append(video_id)
-    return list(set(ids))  # Remove duplicates
+    return list(set(ids))
 
 async def check_channels():
     start_time = time.time()
     checker = YTLiveChecker()
     results = await checker.check_all_channels()
-    # Deduplicate streams to avoid duplicate video URLs
     seen_urls = set()
     live_handles = []
     scheduled_streams = []
@@ -300,10 +269,6 @@ async def check_channels():
             data = await youtube_api.fetch_video_details(session, video_ids)
             if data:
                 combined_data = youtube_api.process_video_details(data, video_urls)
-            else:
-                logger.warning("No valid data returned from YouTube API")
-    else:
-        logger.info("No video IDs to process")
 
     end_time = time.time()
     duration_ms = (end_time - start_time) * 1000
@@ -340,7 +305,6 @@ async def check_all_channels():
         results = await check_channels()
         return JSONResponse(content=results)
     except Exception as e:
-        logger.error(f"Error in check_all_channels: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error checking channels: {str(e)}")
 
 @app.get("/live")
@@ -348,34 +312,19 @@ async def get_live_streams():
     try:
         results = await check_channels()
         if not results or "data" not in results or not isinstance(results["data"], list):
-            logger.warning(f"Invalid results data: {results}")
             return {"live_streams": [], "count": 0}
 
         live_streams = []
         for stream in results["data"]:
-            try:
-                if not isinstance(stream, tuple):
-                    logger.warning(f"Skipping non-tuple stream: {stream}")
-                    continue
-                if len(stream) < 4:
-                    logger.warning(f"Skipping stream with insufficient length: {stream}")
-                    continue
-                if not isinstance(stream[3], dict):
-                    logger.warning(f"Skipping stream with invalid streaming_details: {stream[3]}, stream: {stream}")
-                    continue
-                if stream[3].get('status') == 'live':
+            if isinstance(stream, tuple) and len(stream) >= 4 and isinstance(stream[4], dict):
+                if stream[4].get('status') == 'live':
                     live_streams.append(stream)
-                    logger.debug(f"Added live stream: {stream}")
-            except Exception as e:
-                logger.error(f"Error processing stream: {str(e)}, Stream: {stream}")
-                continue
 
         return {
             "live_streams": live_streams,
             "count": len(live_streams)
         }
     except Exception as e:
-        logger.error(f"Error in get_live_streams: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error getting live streams: {str(e)}")
 
 @app.get("/upcoming")
@@ -383,30 +332,19 @@ async def get_upcoming_streams():
     try:
         results = await check_channels()
         if not results or "data" not in results or not isinstance(results["data"], list):
-            logger.warning(f"Invalid results data: {results}")
             return {"upcoming_streams": [], "count": 0}
 
         upcoming_streams = []
         for stream in results["data"]:
-            try:
-                if not isinstance(stream, tuple) or len(stream) < 4:
-                    logger.warning(f"Skipping invalid stream: {stream}")
-                    continue
-                if not isinstance(stream[3], dict):
-                    logger.warning(f"Skipping stream with invalid streaming_details: {stream[3]}, stream: {stream}")
-                    continue
-                if stream[3].get('status') == 'upcoming':
+            if isinstance(stream, tuple) and len(stream) >= 4 and isinstance(stream[4], dict):
+                if stream[4].get('status') == 'upcoming':
                     upcoming_streams.append(stream)
-            except Exception as e:
-                logger.error(f"Error processing stream: {str(e)}, Stream: {stream}")
-                continue
 
         return {
             "upcoming_streams": upcoming_streams,
             "count": len(upcoming_streams)
         }
     except Exception as e:
-        logger.error(f"Error in get_upcoming_streams: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error getting upcoming streams: {str(e)}")
 
 @app.get("/metrics")
@@ -415,7 +353,6 @@ async def get_metrics():
         results = await check_channels()
         return results.get("metrics", {})
     except Exception as e:
-        logger.error(f"Error in get_metrics: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error getting metrics: {str(e)}")
 
 @app.get("/debug/results")
@@ -424,9 +361,7 @@ async def debug_results():
         results = await check_channels()
         return JSONResponse(content=results)
     except Exception as e:
-        logger.error(f"Error in debug_results: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error fetching results: {str(e)}")
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="127.0.0.1", port=8080)
