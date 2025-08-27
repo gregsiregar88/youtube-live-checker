@@ -343,7 +343,6 @@ async def check_all_channels():
 async def get_live_streams():
     try:
         results = await check_channels()
-        logger.debug(f"Results from check_channels: {json.dumps(results, indent=2)}")
         if not results or "data" not in results or not isinstance(results["data"], list):
             logger.warning(f"Invalid results data: {results}")
             return {"live_streams": [], "count": 0}
