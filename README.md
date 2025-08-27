@@ -1,7 +1,6 @@
 # 🎥 YouTube Live Checker API
 
-A simple API to check multiple YouTube channels for **live** and **upcoming** streams.  
-Deployed on [Railway](https://railway.app).
+A **FastAPI** service to monitor multiple YouTube channels for **live** and **upcoming streams**, with metrics and debugging support.  
 
 **Base URL:**  
 ```
@@ -10,93 +9,171 @@ https://web-production-e592e.up.railway.app/
 
 ---
 
+## ⚙️ Features
+
+- Check if channels are **currently live** or have **scheduled streams**.
+- Fetch detailed video information from YouTube Data API v3 using your **API_KEY**.
+- Return performance metrics such as execution time and number of streams found.
+- Debug endpoint with raw results for troubleshooting.
+- Handles multiple channels and removes duplicates automatically.
+
+---
+
+## 📂 Setup
+
+1. **Environment Variables**: Create a `.env` file with:
+```
+API_KEY=YOUR_YOUTUBE_API_KEY
+CHANNELS_FILE=path/to/channels_with_id.json  # optional, defaults to channels_with_id.json
+PORT=8000  # optional
+```
+
+2. **Channels file**: `channels_with_id.json` must contain a **list of dictionaries**:
+```json
+[
+  {"handle": "tokinosora", "id": "UCp6993wxpyDPHUpavwDFqgg"},
+  {"handle": "robocosan", "id": "UCDqI2jOz0weumE8s7paEk6g"}
+]
+```
+
+3. **Run the API**:
+```bash
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+---
+
 ## 📌 Endpoints
 
-### `GET /check`
-Check all channels for both live and upcoming streams.
+### `GET /`
+Root endpoint, shows API info and available endpoints.
 
-**Example Response**
+**Response**
 ```json
 {
-  "checked": 15,
-  "live": 2,
-  "upcoming": 1,
-  "timestamp": "2025-08-27T12:00:00Z"
+  "message": "YouTube Live Checker API",
+  "version": "1.0.0",
+  "endpoints": {
+    "/check": "Check all channels for live streams",
+    "/live": "Get only live streams",
+    "/upcoming": "Get only upcoming streams",
+    "/metrics": "Get performance metrics from last check",
+    "/debug/results": "Get raw results for debugging"
+  }
+}
+```
+
+---
+
+### `GET /check`
+Check all channels for live or upcoming streams and fetch video details from YouTube API.
+
+**Response**
+```json
+{
+  "data": [
+    [
+      "Streamer Name",
+      "Stream Title",
+      "https://youtube.com/watch?v=abcd1234",
+      {
+        "actualStartTime": "2025-08-27T11:45:00Z",
+        "scheduledStartTime": "2025-08-27T12:00:00Z",
+        "status": "live"
+      }
+    ]
+  ],
+  "metrics": {
+    "total_execution_time_ms": 3250,
+    "channels_checked": 50,
+    "average_time_per_channel_ms": 65,
+    "live_streams_count": 2,
+    "scheduled_streams_count": 1
+  }
 }
 ```
 
 ---
 
 ### `GET /live`
-Get only currently live streams.
+Return only currently live streams.
 
-**Example Response**
+**Response**
 ```json
-[
-  {
-    "channel_id": "UC123456789",
-    "channel_name": "Streamer One",
-    "title": "🔴 Live Now!",
-    "url": "https://youtube.com/watch?v=abcd1234",
-    "start_time": "2025-08-27T11:45:00Z"
-  }
-]
+{
+  "live_streams": [
+    [
+      "Streamer Name",
+      "Stream Title",
+      "https://youtube.com/watch?v=abcd1234",
+      {"status": "live"}
+    ]
+  ],
+  "count": 2
+}
 ```
 
 ---
 
 ### `GET /upcoming`
-Get only upcoming scheduled streams.
+Return only upcoming streams.
 
-**Example Response**
+**Response**
 ```json
-[
-  {
-    "channel_id": "UC987654321",
-    "channel_name": "Streamer Two",
-    "title": "Big Stream Coming Soon",
-    "url": "https://youtube.com/watch?v=efgh5678",
-    "scheduled_time": "2025-08-27T14:00:00Z"
-  }
-]
+{
+  "upcoming_streams": [
+    [
+      "Streamer Name",
+      "Scheduled Stream Title",
+      "https://youtube.com/watch?v=efgh5678",
+      {"status": "upcoming"}
+    ]
+  ],
+  "count": 1
+}
 ```
 
 ---
 
 ### `GET /metrics`
-Get performance metrics from the last check.
+Return performance metrics from the last check.
 
-**Example Response**
+**Response**
 ```json
 {
-  "last_check_duration": "3.24s",
-  "channels_checked": 15,
-  "live_found": 2,
-  "upcoming_found": 1,
-  "errors": 0
+  "total_execution_time_ms": 3250,
+  "channels_checked": 50,
+  "average_time_per_channel_ms": 65,
+  "live_streams_count": 2,
+  "scheduled_streams_count": 1
 }
 ```
 
 ---
 
 ### `GET /debug/results`
-Get raw results from the last API call (for debugging).
+Return the **raw results** including all channels checked and any errors.
 
-**Example Response**
+**Response**
 ```json
 {
-  "raw": [
+  "data": [
     {
-      "channel_id": "UC123456789",
-      "status": "live",
-      "video_id": "abcd1234"
-    },
-    {
-      "channel_id": "UC987654321",
-      "status": "upcoming",
-      "video_id": "efgh5678"
+      "handle": "tokinosora",
+      "channel_id": "UCp6993wxpyDPHUpavwDFqgg",
+      "live": true,
+      "video_url": "https://youtube.com/watch?v=abcd1234",
+      "scheduled": false,
+      "error": null
     }
-  ]
+  ],
+  "metrics": {
+    "total_execution_time_ms": 3250,
+    "channels_checked": 50,
+    "average_time_per_channel_ms": 65,
+    "live_streams_count": 2,
+    "scheduled_streams_count": 1
+  }
 }
 ```
 
@@ -113,9 +190,8 @@ curl https://web-production-e592e.up.railway.app/live
 ```python
 import requests
 
-url = "https://web-production-e592e.up.railway.app/live"
+url = "https://web-production-e592e.up.railway.app/upcoming"
 response = requests.get(url)
-
 if response.status_code == 200:
     data = response.json()
     print(data)
@@ -124,6 +200,9 @@ if response.status_code == 200:
 ---
 
 ## ✅ Notes
-- All endpoints are `GET` requests.
-- Timestamps follow **UTC ISO 8601** format.
-- Useful for monitoring multiple YouTube channels automatically.
+
+- All endpoints use **GET** requests.
+- **Timestamps** follow **UTC ISO 8601** format.
+- Channels with duplicate video URLs are deduplicated automatically.
+- Channels currently in YouTube "waiting rooms" are ignored.
+- Handles both HoloEN, HoloJP, and other VTuber channels included in `channels_with_id.json`.
