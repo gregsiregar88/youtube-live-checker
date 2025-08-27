@@ -21,7 +21,11 @@ from playwright.async_api import async_playwright
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-
+playwright_browser_path = "/root/.cache/ms-playwright/chromium-*/chrome-linux/chrome"
+if not any(os.path.exists(path) for path in glob.glob(playwright_browser_path)):
+    print("Playwright browsers not found. Installing...")
+    os.system("playwright install chromium")
+    
 load_dotenv()
 
 headers = {
