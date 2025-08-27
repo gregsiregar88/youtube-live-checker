@@ -1,3 +1,6 @@
+# MIT License
+# Copyright (c) 2025 Greg Siregar
+
 import re
 import json
 import os

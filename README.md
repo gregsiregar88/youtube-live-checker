@@ -1,5 +1,5 @@
 # 🎥 YouTube Live Checker API
-
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 A **FastAPI** service to monitor multiple YouTube channels for **live** and **upcoming streams**, with metrics and debugging support.  
 
 **Base URL:**  
