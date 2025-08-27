@@ -257,10 +257,8 @@ class YouTubeAPI:
                 status = "live" if streaming_details.get('actualStartTime') else "upcoming"
                 streaming_details['status'] = status
                 combined_data.append((channel_title, title, video_url, streaming_details))
-                logger.debug(f"Processed item {i} (video {video_id}): {channel_title}, {title}, {video_url}, {status}")
         except Exception as e:
             logger.error(f"Error processing video details: {str(e)}, item: {item}")
-        logger.debug(f"Returning combined_data: {combined_data}")
         return combined_data
 
 def extract_video_ids(video_urls):
