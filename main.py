@@ -64,21 +64,25 @@ class YTLiveChecker:
             return []
         try:
             with open(self.channels_file, 'r') as f:
-                channels = json.load(f)
+                content = f.read()
+                if not content.strip():
+                    logger.error(f"Channels file {self.channels_file} is empty")
+                    return []
+                channels = json.loads(content)
                 if not isinstance(channels, list):
-                    logger.error(f"channels_with_id.json must contain a list, got: {type(channels)}")
+                    logger.error(f"channels_with_id.json must contain a list, got: {type(channels)}, content: {content}")
                     return []
                 for channel in channels:
                     if not isinstance(channel, dict) or 'handle' not in channel or 'id' not in channel:
-                        logger.error(f"Invalid channel format: {channel}")
+                        logger.error(f"Invalid channel format in {self.channels_file}: {channel}, full content: {content}")
                         return []
-                logger.info(f"Loaded {len(channels)} channels from {self.channels_file}")
+                logger.info(f"Loaded {len(channels)} channels from {self.channels_file}: {channels}")
                 return channels
         except json.JSONDecodeError as e:
-            logger.error(f"Invalid JSON in channels file: {str(e)}")
+            logger.error(f"Invalid JSON in channels file {self.channels_file}: {str(e)}, content: {content}")
             return []
         except Exception as e:
-            logger.error(f"Error loading channels file: {str(e)}")
+            logger.error(f"Error loading channels file {self.channels_file}: {str(e)}, content: {content}")
             return []
 
     async def check_all_channels(self):
@@ -234,20 +238,25 @@ class YouTubeAPI:
                 if not isinstance(item, dict):
                     logger.warning(f"Skipping non-dict item at index {i}: {item}")
                     continue
+                video_id = item.get('id', 'unknown')
                 snippet = item.get('snippet')
                 if not isinstance(snippet, dict):
-                    logger.warning(f"Skipping item with invalid snippet at index {i}: {snippet}")
+                    logger.warning(f"Skipping item with invalid snippet for video {video_id} at index {i}: {snippet}")
                     continue
                 title = snippet.get('title', 'No title')
                 channel_title = snippet.get('channelTitle', 'Unknown channel')
                 video_url = video_urls[i] if i < len(video_urls) else None
                 streaming_details = item.get('liveStreamingDetails', {})
+                if not isinstance(streaming_details, dict):
+                    logger.warning(f"Invalid streaming_details for video {video_id} at index {i}: {streaming_details}")
+                    continue
                 status = "live" if streaming_details.get('actualStartTime') else "upcoming"
                 streaming_details['status'] = status
                 combined_data.append((channel_title, title, video_url, streaming_details))
-                logger.debug(f"Processed item {i}: {channel_title}, {title}, {video_url}, {status}")
+                logger.debug(f"Processed item {i} (video {video_id}): {channel_title}, {title}, {video_url}, {status}")
         except Exception as e:
-            logger.error(f"Error processing video details: {str(e)}")
+            logger.error(f"Error processing video details: {str(e)}, item: {item}")
+        logger.debug(f"Returning combined_data: {combined_data}")
         return combined_data
 
 def extract_video_ids(video_urls):
@@ -256,7 +265,7 @@ def extract_video_ids(video_urls):
         if url and "v=" in url:
             video_id = url.split("v=")[1].split('&')[0]
             ids.append(video_id)
-    return ids
+    return list(set(ids))  # Remove duplicates
 
 async def check_channels():
     start_time = time.time()
@@ -267,6 +276,7 @@ async def check_channels():
     all_streams = [*live_handles, *scheduled_streams]
     video_urls = [t[1] for t in all_streams if t[1] is not None]
     video_ids = extract_video_ids(video_urls)
+    logger.debug(f"Video URLs: {video_urls}, Video IDs: {video_ids}")
     youtube_api = YouTubeAPI(api_key, headers)
     combined_data = []
 
@@ -336,7 +346,7 @@ async def get_live_streams():
                     logger.warning(f"Skipping stream with insufficient length: {stream}")
                     continue
                 if not isinstance(stream[3], dict):
-                    logger.warning(f"Skipping stream with invalid streaming_details: {stream[3]}")
+                    logger.warning(f"Skipping stream with invalid streaming_details: {stream[3]}, stream: {stream}")
                     continue
                 if stream[3].get('status') == 'live':
                     live_streams.append(stream)
@@ -368,7 +378,7 @@ async def get_upcoming_streams():
                     logger.warning(f"Skipping invalid stream: {stream}")
                     continue
                 if not isinstance(stream[3], dict):
-                    logger.warning(f"Skipping stream with invalid streaming_details: {stream[3]}")
+                    logger.warning(f"Skipping stream with invalid streaming_details: {stream[3]}, stream: {stream}")
                     continue
                 if stream[3].get('status') == 'upcoming':
                     upcoming_streams.append(stream)
