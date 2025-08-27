@@ -59,7 +59,7 @@ class YTLiveChecker:
             "UkqwIcO3YN8", "hlDFczhR2mo", "Criw5zhE0bI", "u8aMX32hlgQ",
             "2JciZo2afXg", "GZHhb_zHVno", "SCVbMM71viE", "M9H0gTvKmGU",
             "Pd9VYQtr2c4", "wnjd9XuuXg0", "IlYErJ1ry_8", "VoWHIX4tp5k",
-            "9vaxfw1qFcY", "sDZFWow3IKI"
+            "9vaxfw1qFcY", "sDZFWow3IKI", "XfTmGxpgN0g"
         }
 
     def load_channels(self):
