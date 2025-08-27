@@ -76,8 +76,10 @@ class YTLiveChecker:
                     if not isinstance(channel, dict) or 'handle' not in channel or 'id' not in channel:
                         logger.error(f"Invalid channel format in {self.channels_file}: {channel}, full content: {content}")
                         return []
-                logger.info(f"Loaded {len(channels)} channels from {self.channels_file}: {channels}")
-                return channels
+                # Remove duplicate channels
+                unique_channels = {tuple(channel.items()): channel for channel in channels}.values()
+                logger.info(f"Loaded {len(unique_channels)} unique channels from {self.channels_file}: {list(unique_channels)}")
+                return list(unique_channels)
         except json.JSONDecodeError as e:
             logger.error(f"Invalid JSON in channels file {self.channels_file}: {str(e)}, content: {content}")
             return []
@@ -232,8 +234,10 @@ class YouTubeAPI:
         if not data or not isinstance(data, dict) or 'items' not in data:
             logger.error(f"Invalid data for processing: {data}")
             return combined_data
-        logger.debug(f"Processing {len(data['items'])} items")
+        logger.debug(f"Processing {len(data['items'])} items with {len(video_urls)} video URLs")
         try:
+            # Create a mapping of video_id to video_url to avoid index mismatches
+            video_url_map = {url.split('v=')[1].split('&')[0]: url for url in video_urls if url and 'v=' in url}
             for i, item in enumerate(data['items']):
                 if not isinstance(item, dict):
                     logger.warning(f"Skipping non-dict item at index {i}: {item}")
@@ -245,7 +249,7 @@ class YouTubeAPI:
                     continue
                 title = snippet.get('title', 'No title')
                 channel_title = snippet.get('channelTitle', 'Unknown channel')
-                video_url = video_urls[i] if i < len(video_urls) else None
+                video_url = video_url_map.get(video_id)
                 streaming_details = item.get('liveStreamingDetails', {})
                 if not isinstance(streaming_details, dict):
                     logger.warning(f"Invalid streaming_details for video {video_id} at index {i}: {streaming_details}")
@@ -271,8 +275,18 @@ async def check_channels():
     start_time = time.time()
     checker = YTLiveChecker()
     results = await checker.check_all_channels()
-    live_handles = [(result['handle'], result['video_url']) for result in results if result.get('live')]
-    scheduled_streams = [(result['handle'], result['video_url']) for result in results if result.get('scheduled')]
+    # Deduplicate streams to avoid duplicate video URLs
+    seen_urls = set()
+    live_handles = []
+    scheduled_streams = []
+    for result in results:
+        video_url = result.get('video_url')
+        if video_url and video_url not in seen_urls:
+            if result.get('live'):
+                live_handles.append((result['handle'], video_url))
+            elif result.get('scheduled'):
+                scheduled_streams.append((result['handle'], video_url))
+            seen_urls.add(video_url)
     all_streams = [*live_handles, *scheduled_streams]
     video_urls = [t[1] for t in all_streams if t[1] is not None]
     video_ids = extract_video_ids(video_urls)
@@ -314,7 +328,8 @@ async def root():
             "/check": "Check all channels for live streams",
             "/live": "Get only live streams",
             "/upcoming": "Get only upcoming streams",
-            "/metrics": "Get performance metrics from last check"
+            "/metrics": "Get performance metrics from last check",
+            "/debug/results": "Get raw results for debugging"
         }
     }
 
@@ -403,6 +418,15 @@ async def get_metrics():
     except Exception as e:
         logger.error(f"Error in get_metrics: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error getting metrics: {str(e)}")
+
+@app.get("/debug/results")
+async def debug_results():
+    try:
+        results = await check_channels()
+        return JSONResponse(content=results)
+    except Exception as e:
+        logger.error(f"Error in debug_results: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching results: {str(e)}")
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
